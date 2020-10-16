@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+
+# TODO: Optionally add alias to .bashrc
+# TODO: Ask for a name for the cli (default to baseops)
+# TODO: Name the output files using the cli name
+# TODO: Set BASEOPS_HOSTNAME using the cli name
+# TODO: Prefix flags using the cli name
+
+set -euo pipefail
+
+declare baseops_initial_version='0.1.0'
+declare baseops_go_centry_version='0.2.0-prerelease2'
+
+log() { echo "[baseops/installer] $*"; }
+
+generate_baseops_entrypoint() {
+  log 'generating cli entrypoint'
+  echo "#!/usr/bin/env bash
+
+set -euo pipefail
+
+declare baseops_args=()
+
+baseops_init() {
+  export BASEOPS_IMAGE_NAME='baseops/baseops'
+  export BASEOPS_IMAGE_VERSION='${baseops_initial_version:?}'
+  export BASEOPS_CONTAINER_PORT='9000'
+  export BASEOPS_CONTAINER_TTY='-it'
+  export BASEOPS_HOSTNAME='baseops'
+  export BASEOPS_HOST_WORKDIR=\"/\${PWD:?}\"
+
+  [[ \${CI:-false} == true ]] && BASEOPS_CONTAINER_TTY=''
+
+  baseops_parse_opts \"\$@\"
+  baseops_exists \"\$@\" || (baseops_parse_opts --baseops-pull || true)
+  baseops_exists \"\$@\" || (baseops_parse_opts --baseops-build || true)
+}
+
+baseops_log() { echo \"[baseops] \$*\"; }
+
+baseops_exists() {
+  [[ \"\$(docker image ls | grep \"\${BASEOPS_IMAGE_NAME:?}\" | grep -c \"\${BASEOPS_IMAGE_VERSION:?}\")\" != 0 ]]
+}
+
+baseops_parse_opts() {
+  while [[ \$# -gt 0 ]]; do
+    local key=\"\${1:-}\"
+    local value=\"\${2:-}\"
+    case \"\${key}\" in
+      --baseops-build)
+        baseops_log \"Building docker image \${BASEOPS_IMAGE_NAME:?}:\${BASEOPS_IMAGE_VERSION:?} ...\"
+        docker build -t \"\${BASEOPS_IMAGE_NAME:?}:\${BASEOPS_IMAGE_VERSION:?}\" .
+        exit 0
+        ;;
+      --baseops-pull)
+        baseops_log \"Pulling docker image \${BASEOPS_IMAGE_NAME:?}:\${BASEOPS_IMAGE_VERSION:?} ...\"
+        docker pull \"\${BASEOPS_IMAGE_NAME:?}:\${BASEOPS_IMAGE_VERSION:?}\"
+        exit 0
+        ;;
+      --baseops-port)
+        BASEOPS_CONTAINER_PORT=\"\${value:?}\"
+        shift
+        ;;
+      *)
+        baseops_args+=(\"\${key:?}\")
+        ;;
+    esac
+    shift
+  done
+}
+
+baseops() {
+  baseops_init \"\$@\"
+
+  docker run \\
+    --rm \${BASEOPS_CONTAINER_TTY} \\
+    -v \"\${BASEOPS_HOST_WORKDIR:?}:/work\" \\
+    -e BASEOPS_IMAGE_NAME \\
+    -e BASEOPS_IMAGE_VERSION \\
+    -e BASEOPS_CONTAINER_PORT \\
+    -e BASEOPS_HOST_WORKDIR \\
+    -e BASEOPS_VERSION=\"\${BASEOPS_IMAGE_VERSION:?}\" \\
+    -p \"\${BASEOPS_CONTAINER_PORT:?}:\${BASEOPS_CONTAINER_PORT:?}\" \\
+    --hostname \"\${BASEOPS_HOSTNAME:?}\" \\
+    --entrypoint 'go-centry_v${baseops_go_centry_version:?}' \\
+    \"\${BASEOPS_IMAGE_NAME:?}:\${BASEOPS_IMAGE_VERSION:?}\" \\
+    \"//work/centry.yaml\" \"\${baseops_args[@]:-}\"
+}
+
+baseops \"\$@\"
+" >baseops
+  chmod +x baseops
+}
+
+generate_dockerfile() {
+  log "generating Dockerfile"
+  echo "FROM alpine:3.11
+LABEL maintainer=\"Kristoffer Ahl <kristoffer.ahl@77dynamite.com>\"
+
+ARG WORK_DIR=/work/
+RUN mkdir -p \${WORK_DIR}
+WORKDIR \${WORK_DIR}
+
+RUN apk update
+RUN apk --no-cache add \\
+  bash \\
+  curl
+
+RUN curl -L https://github.com/kristofferahl/go-centry/releases/download/v${baseops_go_centry_version:?}/go-centry_${baseops_go_centry_version:?}_Linux_x86_64.tar.gz | tar -xzv -C /usr/local/bin/" >Dockerfile
+}
+
+generate_default_directories() {
+  log 'scaffolding example directories'
+  mkdir -p ./scripts/
+  mkdir -p ./commands/
+}
+
+generate_default_files() {
+  log 'scaffolding example files'
+
+  echo "#!/usr/bin/env bash
+
+# NOTE: Docs can be found at https://github.com/kristofferahl/go-centry
+
+main() {
+  echo 'Initializing...'
+}
+
+main \"\$@\"
+" >./scripts/init.sh
+
+  echo "#!/usr/bin/env bash
+
+# NOTE: Docs can be found at https://github.com/kristofferahl/go-centry
+
+# centry.cmd[shell]/description=Starts a shell inside the container
+shell() {
+  echo 'Starting a shell inside the container...'
+  PS1=\"[basops-cli] \\s-\\v \\w ? \" bash
+}
+" >./commands/shell.sh
+}
+
+generate_centryfile() {
+  log 'generating centry.yaml'
+  echo "# NOTE: Docs can be found at https://github.com/kristofferahl/go-centry
+scripts:
+  - scripts/init.sh
+commands:
+  - name: shell
+    path: commands/shell.sh
+config:
+  name: baseops
+  description: Baseops CLI
+  log:
+    level: info
+    prefix: '[baseops/centry] '
+  hideInternalCommands: true
+  hideInternalOptions: true
+" >centry.yaml
+}
+
+install() {
+  log 'installing baseops ...'
+  generate_baseops_entrypoint "$@"
+  generate_dockerfile "$@"
+  generate_default_directories "$@"
+  generate_default_files "$@"
+  generate_centryfile "$@"
+  log 'baseops successfully installed!'
+}
+
+install "$@"
