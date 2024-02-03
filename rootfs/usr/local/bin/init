@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+export TERM=xterm-256color
+
+init() {
+  local -r foreground=212
+  local -r border=44
+
+  gum style --foreground ${foreground:?} \
+    'So you need a new cli?' \
+    'Great, let me collect some details before we can proceed...'
+
+  local name
+  name=$(gum input --prompt "? What's the name of your cli: " --placeholder "name" --value "baseops-cli")
+
+  gum style \
+    --foreground ${foreground:?} --border-foreground ${border:?} --border normal \
+    --align left --width 80 --margin "1 1 0 1" --padding "1 2" \
+    "Name: ${name:?'A name must be provided'}"
+
+  if ! gum confirm "Are you good with this?"; then
+    exit 1
+  fi
+
+  export CLI_NAME="${name:?}"
+  export OUTPUT_DIR="${OUTPUT_DIR:-/work}"
+
+  echo
+  gum style --foreground ${foreground:?} \
+    "Scaffolding ${CLI_NAME:?} with gomplate..." \
+    "Your files will be written to ${OUTPUT_DIR:?}!"
+
+  pushd /etc/baseops-cli/templates 1>/dev/null || exit 1
+  gomplate --input-dir=. --output-dir="${OUTPUT_DIR:?}" --datasource config=/etc/baseops-cli/gomplate-config.yaml
+  popd 1>/dev/null || exit 1
+
+  mv "${OUTPUT_DIR:?}/baseops-cli" "${OUTPUT_DIR:?}/${CLI_NAME:?}"
+
+  declare hostdir="${OUTPUT_DIR:?}"
+  hostdir="${hostdir/\/work/}"
+  [[ "${hostdir}" =~ / ]] && hostdir="${hostdir:1}"
+  [[ "${hostdir}" != '' ]] && hostdir="cd ${hostdir} && "
+
+  gum style \
+    --foreground ${foreground:?} --border-foreground ${border:?} --border normal \
+    --align left --width 80 --margin "1 1 0 1" --padding "1 2" \
+    "Scaffolding was successful!" \
+    'Next up, build the docker image by running the following...' \
+    '' \
+    "${hostdir:-}./${CLI_NAME:?} baseops build"
+}
+
+init "$@"

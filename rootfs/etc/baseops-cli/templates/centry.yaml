@@ -1,0 +1,15 @@
+scripts:
+  - ./scripts/init.sh
+
+commands:
+  - name: shell
+    path: commands/shell.sh
+    description: Start a new baseops shell
+
+config:
+  name: "{{ .Env.CLI_NAME }}"
+  description: CLI for the {{ .Env.CLI_NAME }} project
+  log:
+    level: info
+    prefix: "[{{ .Env.CLI_NAME}}] "
+  helpMode: default
