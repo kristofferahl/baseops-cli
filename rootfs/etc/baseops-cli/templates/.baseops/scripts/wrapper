@@ -29,8 +29,9 @@ wrapper() {
 
   # Handle special variables
   [[ -n "${BASEOPS_PORT:-}" ]] && DOCKER_RUN_ARGS+=("-p" "${BASEOPS_PORT:?}:${BASEOPS_PORT:?}" "-e" "BASEOPS_PORT")
+  [[ "${CI:-}" != 'true' ]] && DOCKER_RUN_ARGS+=("-it")
 
-  docker run --rm -it \
+  docker run --rm \
     -v "/${PWD:?}:/work" \
     -v "/${HOME:?}/.ssh/:/root/.ssh/" \
     -v /var/run/docker.sock:/var/run/docker.sock \
