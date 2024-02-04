@@ -31,6 +31,9 @@ wrapper() {
   [[ -n "${BASEOPS_PORT:-}" ]] && DOCKER_RUN_ARGS+=("-p" "${BASEOPS_PORT:?}:${BASEOPS_PORT:?}" "-e" "BASEOPS_PORT")
   [[ "${CI:-}" != 'true' ]] && DOCKER_RUN_ARGS+=("-it")
 
+  # Handle post-exec cleanup
+  [[ -f ./baseops-post-exec ]] && rm ./baseops-post-exec
+
   docker run --rm \
     -v "/${PWD:?}:/work" \
     -v "/${HOME:?}/.ssh/:/root/.ssh/" \
@@ -42,6 +45,11 @@ wrapper() {
     "${DOCKER_RUN_ARGS[@]}" \
     "${DOCKER_IMAGE:?}:${DOCKER_TAG:?}" \
     "${@}"
+
+  # Handle post-exec
+  if [[ -f ./baseops-post-exec ]]; then
+    chmod +x ./baseops-post-exec && ./baseops-post-exec && rm ./baseops-post-exec &>/dev/null
+  fi
 }
 
 wrapper "$@"
