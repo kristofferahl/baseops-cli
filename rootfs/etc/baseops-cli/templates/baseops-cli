@@ -7,6 +7,7 @@
 # This serves as an entrypoint for the {{ .Env.CLI_NAME }} cli.
 # Customizations should be made by modifying files in the .baseops directory.
 # - .baseops/meta
+# - .baseops/init.sh
 # - .baseops/Dockerfile
 # - .baseops/packages.txt
 # ******************************************************************************

@@ -1,32 +1,46 @@
 #!/usr/bin/env bash
 
-set -a
-# shellcheck disable=SC1091
-source ".baseops/meta"
-set +a
+wrapper() {
+  set -a
+  # shellcheck disable=SC1091
+  source ".baseops/meta"
+  set +a
 
-# check args for internal baseops commands
-if [[ "${1:-}" == 'baseops' ]]; then
-  case "${2:-}" in
-    build)
-      ".baseops/scripts/build" "${@:3}" || exit 1
-      shift 2
-      ;;
-    *)
-      echo "Unknown baseops command: ${2:-}"
-      exit 1
-      ;;
-  esac
-  echo
-fi
+  # check args for internal baseops commands
+  if [[ "${1:-}" == 'baseops' ]]; then
+    case "${2:-}" in
+      build)
+        ".baseops/scripts/build" "${@:3}" || exit 1
+        shift 2
+        ;;
+      *)
+        echo "Unknown baseops command: ${2:-}"
+        exit 1
+        ;;
+    esac
+    echo
+  fi
 
-docker run --rm -it \
-  -v "/${PWD:?}:/work" \
-  -v "/${HOME:?}/.ssh/:/root/.ssh/" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -e DOCKER_IMAGE \
-  -e DOCKER_TAG \
-  -e DOCKER_PLATFORMS \
-  -e {{ .Env.CLI_NAME | strings.ToUpper }}_VERSION="${DOCKER_TAG:?}" \
-  "${DOCKER_IMAGE:?}:${DOCKER_TAG:?}" \
-  "${@}"
+  export DOCKER_RUN_ARGS=()
+
+  # shellcheck disable=SC1091
+  source ".baseops/init.sh"
+  init_baseops "$@"
+
+  # Handle special variables
+  [[ -n "${BASEOPS_PORT:-}" ]] && DOCKER_RUN_ARGS+=("-p" "${BASEOPS_PORT:?}:${BASEOPS_PORT:?}" "-e" "BASEOPS_PORT")
+
+  docker run --rm -it \
+    -v "/${PWD:?}:/work" \
+    -v "/${HOME:?}/.ssh/:/root/.ssh/" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -e DOCKER_IMAGE \
+    -e DOCKER_TAG \
+    -e DOCKER_PLATFORMS \
+    -e {{ .Env.CLI_NAME | strings.ToUpper }}_VERSION="${DOCKER_TAG:?}" \
+    "${DOCKER_RUN_ARGS[@]}" \
+    "${DOCKER_IMAGE:?}:${DOCKER_TAG:?}" \
+    "${@}"
+}
+
+wrapper "$@"
