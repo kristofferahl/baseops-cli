@@ -7,9 +7,14 @@ init() {
   local -r foreground=212
   local -r border=44
 
+  echo
+  figurine -f Colossal.flf baseops-cli | sed "s/^/  /"
+  echo
+  gum style --foreground 10 "# baseops-cli ${BASEOPS_CLI_VERSION:?}"
+
   gum style --foreground ${foreground:?} --margin "1 0" \
     'So you need a new cli?' \
-    'Great, let me collect some details before we can proceed...'
+    "We can help with that! Let's collect some intel first..."
 
   local name
   local description
