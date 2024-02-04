@@ -5,6 +5,7 @@ source ./release || exit 1
 
 echo
 echo "Running container ${BASEOPS_CLI_IMAGE:?}/${BASEOPS_CLI_VERSION:?} ... $*"
+echo
 docker run --rm -it \
   -v "/${PWD:?}:/work" \
   -e "OUTPUT_DIR=/work/generated" \

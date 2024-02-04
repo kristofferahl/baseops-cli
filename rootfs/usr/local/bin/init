@@ -1,28 +1,61 @@
 #!/usr/bin/env bash
 
+export COLORTERM=truecolor
 export TERM=xterm-256color
 
 init() {
   local -r foreground=212
   local -r border=44
 
-  gum style --foreground ${foreground:?} \
+  gum style --foreground ${foreground:?} --margin "1 0" \
     'So you need a new cli?' \
     'Great, let me collect some details before we can proceed...'
 
   local name
-  name=$(gum input --prompt "? What's the name of your cli: " --placeholder "name" --value "baseops-cli")
+  local description
+  local banner
+  local docker_image_name
+  local docker_image_tag
+
+  while [[ "${name}" == '' ]]; do
+    name=$(gum input --prompt "? What do you want to call your cli: " --placeholder "name")
+  done
+
+  while [[ "${description}" == '' ]]; do
+    description=$(gum input --prompt "? Describe the cli: " --placeholder "description" --value "CLI for the ${name:?} project")
+  done
+
+  while [[ "${banner}" == '' ]]; do
+    banner=$(gum input --prompt "? What banner do you want for your prompt: " --placeholder "banner" --value "${name:?}")
+  done
+
+  while [[ "${docker_image_name}" == '' ]]; do
+    docker_image_name=$(gum input --prompt "? What should we name your docker image: " --placeholder "kristofferahl/${name:?}" --value "kristofferahl/${name:?}")
+  done
+
+  while [[ "${docker_image_tag}" == '' ]]; do
+    docker_image_tag=$(gum input --prompt "? How should we tag your docker image: " --placeholder "v1.0.0" --value "v1.0.0")
+  done
 
   gum style \
     --foreground ${foreground:?} --border-foreground ${border:?} --border normal \
-    --align left --width 80 --margin "1 1 0 1" --padding "1 2" \
-    "Name: ${name:?'A name must be provided'}"
+    --align left --width 80 --padding "1 2" \
+    "name              : ${name:?'A name must be provided'}" \
+    "description       : ${description:?'A description must be provided'}" \
+    "banner            : ${banner:?'A banner must be provided'}" \
+    '' \
+    "docker image name : ${docker_image_name:?'A docker image name must be provided'}" \
+    "docker image tag  : ${docker_image_tag:?'A docker image tag must be provided'}"
 
   if ! gum confirm "Are you good with this?"; then
     exit 1
   fi
 
   export CLI_NAME="${name:?}"
+  export CLI_DESCRIPTION="${description:?}"
+  export CLI_BANNER="${banner:?}"
+  export CLI_DOCKER_IMAGE_NAME="${docker_image_name:?}"
+  export CLI_DOCKER_IMAGE_TAG="${docker_image_tag:?}"
   export OUTPUT_DIR="${OUTPUT_DIR:-/work}"
 
   echo

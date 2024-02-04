@@ -8,7 +8,7 @@ commands:
 
 config:
   name: "{{ .Env.CLI_NAME }}"
-  description: CLI for the {{ .Env.CLI_NAME }} project
+  description: "{{ .Env.CLI_DESCRIPTION }}"
   log:
     level: info
     prefix: "[{{ .Env.CLI_NAME}}] "
