@@ -4,12 +4,12 @@ scripts:
 commands:
   - name: shell
     path: commands/shell.sh
-    description: Start a new baseops shell
+    description: Start a new {{ .Env.CLI_BANNER }} shell
 
 config:
   name: "{{ .Env.CLI_NAME }}"
   description: "{{ .Env.CLI_DESCRIPTION }}"
   log:
     level: info
-    prefix: "[{{ .Env.CLI_NAME}}] "
+    prefix: "[{{ .Env.CLI_NAME }}] "
   helpMode: default
