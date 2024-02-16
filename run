@@ -62,9 +62,7 @@ run_release() {
   docker buildx build --push --platform "${BASEOPS_CLI_PLATFORMS:?}" --build-arg "BASEOPS_CLI_IMAGE=${BASEOPS_CLI_IMAGE:?}" --build-arg="BASEOPS_CLI_VERSION=${BASEOPS_CLI_VERSION:?}" --build-arg "BASEOPS_VERSION=${BASEOPS_VERSION:?}" -t "${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}" .
 
   if [[ ${tag_latest:?} == true ]]; then
-    docker pull "${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}"
-    docker tag "${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}" "${BASEOPS_CLI_IMAGE:?}:latest"
-    docker push "${BASEOPS_CLI_IMAGE:?}:latest"
+    docker buildx build --push --platform "${BASEOPS_CLI_PLATFORMS:?}" --build-arg "BASEOPS_CLI_IMAGE=${BASEOPS_CLI_IMAGE:?}" --build-arg="BASEOPS_CLI_VERSION=${BASEOPS_CLI_VERSION:?}" --build-arg "BASEOPS_VERSION=${BASEOPS_VERSION:?}" -t "${BASEOPS_CLI_IMAGE:?}:latest" .
   fi
 }
 

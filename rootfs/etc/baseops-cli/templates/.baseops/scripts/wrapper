@@ -35,14 +35,14 @@ baseops_wrapper() {
   # Handle special variables
   [[ "${CI:-}" != 'true' ]] && DOCKER_RUN_ARGS+=("-it")
   [[ -n "${BASEOPS_PORT:-}" ]] && DOCKER_RUN_ARGS+=("-p" "${BASEOPS_PORT:?}:${BASEOPS_PORT:?}" "-e" "BASEOPS_PORT")
-  [[ -n "${BASEOPS_FORCE_ARCH:-}" ]] && DOCKER_TAG="${DOCKER_TAG:?}-${BASEOPS_FORCE_ARCH:?}" && echo "WARN: BASEOPS_FORCE_ARCH is set, DOCKER_TAG set to ${DOCKER_TAG:?}..."
+  [[ -n "${BASEOPS_FORCE_ARCH:-}" ]] && BASEOPS_IMAGE_TAG="${BASEOPS_IMAGE_TAG:?}-${BASEOPS_FORCE_ARCH:?}" && echo "WARN: BASEOPS_FORCE_ARCH is set, BASEOPS_IMAGE_TAG set to ${BASEOPS_IMAGE_TAG:?}..."
 
   # Set default docker run args
   DOCKER_RUN_ARGS+=(
-    -e DOCKER_IMAGE
-    -e DOCKER_TAG
-    -e DOCKER_PLATFORMS
-    -e {{ .Env.CLI_NAME | strings.ToUpper }}_VERSION="${DOCKER_TAG:?}"
+    -e BASEOPS_IMAGE_NAME
+    -e BASEOPS_IMAGE_TAG
+    -e BASEOPS_IMAGE_PLATFORMS
+    -e {{ .Env.CLI_NAME | strings.ToUpper }}_VERSION="${BASEOPS_IMAGE_TAG:?}"
     -e CI)
 
   # Run init
@@ -56,7 +56,7 @@ baseops_wrapper() {
   # Run the container
   docker run --rm \
     "${DOCKER_RUN_ARGS[@]}" \
-    "${DOCKER_REGISTRY:?}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?}" \
+    "${BASEOPS_IMAGE_REGISTRY:?}/${BASEOPS_IMAGE_NAME:?}:${BASEOPS_IMAGE_TAG:?}" \
     "${@}"
 
   # Handle post-exec

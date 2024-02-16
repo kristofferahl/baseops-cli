@@ -24,18 +24,18 @@ baseops_build() {
   # make we are using the builder
   if ! docker buildx use mpb-baseops &>/dev/null; then
     echo "Setting up buildx builder..."
-    docker buildx create --use --platform "${DOCKER_PLATFORMS:?}" --name mpb-baseops
+    docker buildx create --use --platform "${BASEOPS_IMAGE_PLATFORMS:?}" --name mpb-baseops
     docker buildx inspect --bootstrap
   fi
 
-  echo "Building docker image ${DOCKER_REGISTRY}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?} (${DOCKER_PLATFORMS:?})..."
+  echo "Building docker image ${BASEOPS_IMAGE_REGISTRY}/${BASEOPS_IMAGE_NAME:?}:${BASEOPS_IMAGE_TAG:?} (${BASEOPS_IMAGE_PLATFORMS:?})..."
 
   local architecture
 
   # building image for each platform
-  for platform in ${DOCKER_PLATFORMS//,/ }; do
+  for platform in ${BASEOPS_IMAGE_PLATFORMS//,/ }; do
     architecture="${platform/linux\//}"
-    docker buildx build --load --platform "${platform:?}" -t "${DOCKER_REGISTRY}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?}-${architecture:?}" --file .baseops/Dockerfile .baseops/
+    docker buildx build --load --platform "${platform:?}" -t "${BASEOPS_IMAGE_REGISTRY}/${BASEOPS_IMAGE_NAME:?}:${BASEOPS_IMAGE_TAG:?}-${architecture:?}" --file .baseops/Dockerfile .baseops/
   done
 
   # instruct user on how to use the image
@@ -51,21 +51,21 @@ baseops_publish() {
   # make we are using the builder
   if ! docker buildx use mpb-baseops &>/dev/null; then
     echo "Setting up buildx builder..."
-    docker buildx create --use --platform "${DOCKER_PLATFORMS:?}" --name mpb-baseops
+    docker buildx create --use --platform "${BASEOPS_IMAGE_PLATFORMS:?}" --name mpb-baseops
     docker buildx inspect --bootstrap
   fi
 
-  echo "Publishing docker image ${DOCKER_REGISTRY}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?} (${DOCKER_PLATFORMS:?})..."
+  echo "Publishing docker image ${BASEOPS_IMAGE_REGISTRY}/${BASEOPS_IMAGE_NAME:?}:${BASEOPS_IMAGE_TAG:?} (${BASEOPS_IMAGE_PLATFORMS:?})..."
 
   # publish multi-arch image
-  docker buildx build --push --platform "${DOCKER_PLATFORMS:?}" -t "${DOCKER_REGISTRY}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?}" --file .baseops/Dockerfile .baseops/
+  docker buildx build --push --platform "${BASEOPS_IMAGE_PLATFORMS:?}" -t "${BASEOPS_IMAGE_REGISTRY}/${BASEOPS_IMAGE_NAME:?}:${BASEOPS_IMAGE_TAG:?}" --file .baseops/Dockerfile .baseops/
 
   # publish for each platform
-  for platform in ${DOCKER_PLATFORMS//,/ }; do
+  for platform in ${BASEOPS_IMAGE_PLATFORMS//,/ }; do
     architecture="${platform/linux\//}"
-    docker buildx build --push --platform "${platform:?}" -t "${DOCKER_REGISTRY}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?}-${architecture:?}" --file .baseops/Dockerfile .baseops/
+    docker buildx build --push --platform "${platform:?}" -t "${BASEOPS_IMAGE_REGISTRY}/${BASEOPS_IMAGE_NAME:?}:${BASEOPS_IMAGE_TAG:?}-${architecture:?}" --file .baseops/Dockerfile .baseops/
   done
 
   # pulling to make sure we have the latest image after publish
-  docker pull "${DOCKER_REGISTRY}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?}"
+  docker pull "${BASEOPS_IMAGE_REGISTRY}/${BASEOPS_IMAGE_NAME:?}:${BASEOPS_IMAGE_TAG:?}"
 }
