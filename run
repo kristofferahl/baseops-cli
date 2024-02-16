@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 declare -r git_tag="$(git describe --tags --abbrev=0)"
 declare -r head_count=$(git rev-list --count HEAD)
 declare -r tag_count=$(git rev-list --count "${git_tag:?}")
@@ -17,11 +19,33 @@ export BASEOPS_CLI_PLATFORMS="linux/arm64,linux/amd64"
 export BASEOPS_CLI_IMAGE="kristofferahl/baseops-cli"
 export BASEOPS_CLI_VERSION="${release_version:?}"
 
-if [[ ${BASEOPS_DEV_MODE} == true ]]; then
-  echo "Building image (dev mode)..."
-  export DOCKER_BUILDKIT=1
-  docker build --platform "linux/${BASEOPS_DEV_ARCH:-arm64}" --build-arg "BASEOPS_CLI_IMAGE=${BASEOPS_CLI_IMAGE:?}" --build-arg="BASEOPS_CLI_VERSION=${BASEOPS_CLI_VERSION:?}" --build-arg "BASEOPS_VERSION=${BASEOPS_VERSION:?}" -t "${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}" .
-else
+run_build() {
+  if [[ ${BASEOPS_DEV_MODE:-false} == true ]]; then
+    echo "Building image (dev mode)..."
+    export DOCKER_BUILDKIT=1
+    docker build --platform "linux/${BASEOPS_DEV_ARCH:-arm64}" --build-arg "BASEOPS_CLI_IMAGE=${BASEOPS_CLI_IMAGE:?}" --build-arg="BASEOPS_CLI_VERSION=${BASEOPS_CLI_VERSION:?}" --build-arg "BASEOPS_VERSION=${BASEOPS_VERSION:?}" -t "${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}" .
+  else
+    echo "BASEOPS_DEV_MODE is not set to true, skipping build..."
+  fi
+}
+
+run_test() {
+  run_build
+
+  echo
+  echo "Running container ${BASEOPS_CLI_IMAGE:?}/${BASEOPS_CLI_VERSION:?} ... $*"
+  echo
+  docker run --rm -it \
+    -v "/${PWD:?}:/work" \
+    -e "OUTPUT_DIR=/work/generated" \
+    --pull missing \
+    "${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}" \
+    "${@}"
+
+  echo "Exit code: $?"
+}
+
+run_release() {
   echo
   echo "Releasing image ${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}"
   echo -n "Continue? [y/N]: " && read -r OK
@@ -42,4 +66,18 @@ else
     docker tag "${BASEOPS_CLI_IMAGE:?}:${BASEOPS_CLI_VERSION:?}" "${BASEOPS_CLI_IMAGE:?}:latest"
     docker push "${BASEOPS_CLI_IMAGE:?}:latest"
   fi
-fi
+}
+
+main() {
+  local command="${1:-}"
+  shift || true
+
+  case "${command:-}" in
+    build) run_build "$@" ;;
+    test) run_test "$@" ;;
+    release) run_release "$@" ;;
+    *) echo "Unknown command: ${command:-}" && exit 1 ;;
+  esac
+}
+
+main "$@"
