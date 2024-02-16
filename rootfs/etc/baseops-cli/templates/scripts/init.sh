@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 logo() {
-  export BANNER='oppenheimer'
+  export BANNER='{{ .Env.CLI_BANNER }}'
   [[ "${NO_LOGO:-false}" == 'true' || "${QUIET:-false}" == 'true' ]] && return
   echo
   gum style --foreground 10 "# I am ${BANNER:?}!"
