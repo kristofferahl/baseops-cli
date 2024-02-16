@@ -19,8 +19,12 @@ init() {
   local name
   local description
   local banner
-  local docker_image_name
-  local docker_image_tag
+  local image_name
+  local image_tag
+  local image_registry='index.docker.io'
+  local image_architectures=()
+  local image_platforms=()
+  local image_platforms_str=''
 
   while [[ "${name}" == '' ]]; do
     name=$(gum input --prompt "? What do you want to call your cli: " --placeholder "name")
@@ -34,13 +38,27 @@ init() {
     banner=$(gum input --prompt "? What banner do you want for your prompt: " --placeholder "banner" --value "${name:?}")
   done
 
-  while [[ "${docker_image_name}" == '' ]]; do
-    docker_image_name=$(gum input --prompt "? What should we name your docker image: " --placeholder "kristofferahl/${name:?}" --value "kristofferahl/${name:?}")
+  while [[ "${image_name}" == '' ]]; do
+    image_name=$(gum input --prompt "? What should we name your docker image: " --placeholder "kristofferahl/${name:?}" --value "kristofferahl/${name:?}")
   done
 
-  while [[ "${docker_image_tag}" == '' ]]; do
-    docker_image_tag=$(gum input --prompt "? How should we tag your docker image: " --placeholder "v1.0.0" --value "v1.0.0")
+  while [[ "${image_tag}" == '' ]]; do
+    image_tag=$(gum input --prompt "? How should we tag your docker image: " --placeholder "v1.0.0" --value "v1.0.0")
   done
+
+  while [[ ${#image_architectures[@]} -le 0 ]]; do
+    echo "What architectures should the image support?"
+    mapfile -t image_architectures < <(printf 'amd64\narm64' | gum choose --no-limit)
+  done
+
+  for architecture in "${image_architectures[@]}"; do
+    image_platforms+=("linux/${architecture:?}")
+  done
+
+  image_platforms_str="$(
+    IFS=,
+    echo "${image_platforms[*]}"
+  )"
 
   gum style \
     --foreground ${foreground:?} --border-foreground ${border:?} --border normal \
@@ -49,8 +67,10 @@ init() {
     "description       : ${description:?'A description must be provided'}" \
     "banner            : ${banner:?'A banner must be provided'}" \
     '' \
-    "docker image name : ${docker_image_name:?'A docker image name must be provided'}" \
-    "docker image tag  : ${docker_image_tag:?'A docker image tag must be provided'}"
+    "docker image name : ${image_name:?'A docker image name must be provided'}" \
+    "docker image tag  : ${image_tag:?'A docker image tag must be provided'}" \
+    "docker platforms  : ${image_platforms_str:?'A platform must be provided'}" \
+    "docker registry   : ${image_registry:?'A registry must be provided'}"
 
   if ! gum confirm "Are you good with this?"; then
     exit 1
@@ -59,8 +79,10 @@ init() {
   export CLI_NAME="${name:?}"
   export CLI_DESCRIPTION="${description:?}"
   export CLI_BANNER="${banner:?}"
-  export CLI_DOCKER_IMAGE_NAME="${docker_image_name:?}"
-  export CLI_DOCKER_IMAGE_TAG="${docker_image_tag:?}"
+  export CLI_IMAGE_NAME="${image_name:?}"
+  export CLI_IMAGE_TAG="${image_tag:?}"
+  export CLI_IMAGE_REGISTRY="${image_registry:?}"
+  export CLI_IMAGE_PLATFORMS="${image_platforms_str:?}"
   export OUTPUT_DIR="${OUTPUT_DIR:-/work}"
 
   echo

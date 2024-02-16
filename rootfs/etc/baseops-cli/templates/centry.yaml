@@ -1,10 +1,16 @@
 scripts:
-  - ./scripts/init.sh
+  - scripts/init.sh
 
 commands:
   - name: shell
     path: commands/shell.sh
     description: Start a new {{ .Env.CLI_BANNER }} shell
+
+options:
+  - name: quiet
+    short: q
+    type: bool
+    description: Run commands in quiet mode
 
 config:
   name: "{{ .Env.CLI_NAME }}"

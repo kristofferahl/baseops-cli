@@ -1,21 +1,30 @@
 #!/usr/bin/env bash
 
-wrapper() {
+set -euo pipefail
+
+baseops_wrapper() {
   set -a
   # shellcheck disable=SC1091
   source ".baseops/meta"
   set +a
 
+  # shellcheck disable=SC1091
+  source ".baseops/scripts/baseops.sh"
+
   # check args for internal baseops commands
   if [[ "${1:-}" == 'baseops' ]]; then
     case "${2:-}" in
       build)
-        ".baseops/scripts/build" "${@:3}" || exit 1
+        baseops_build "${@:3}" || exit 1
+        shift 2
+        ;;
+      publish)
+        baseops_publish "${@:3}" || exit 1
         shift 2
         ;;
       *)
         echo "Unknown baseops command: ${2:-}"
-        exit 1
+        exit 127
         ;;
     esac
     echo
@@ -23,27 +32,31 @@ wrapper() {
 
   export DOCKER_RUN_ARGS=()
 
+  # Handle special variables
+  [[ "${CI:-}" != 'true' ]] && DOCKER_RUN_ARGS+=("-it")
+  [[ -n "${BASEOPS_PORT:-}" ]] && DOCKER_RUN_ARGS+=("-p" "${BASEOPS_PORT:?}:${BASEOPS_PORT:?}" "-e" "BASEOPS_PORT")
+  [[ -n "${BASEOPS_FORCE_ARCH:-}" ]] && DOCKER_TAG="${DOCKER_TAG:?}-${BASEOPS_FORCE_ARCH:?}" && echo "WARN: BASEOPS_FORCE_ARCH is set, DOCKER_TAG set to ${DOCKER_TAG:?}..."
+
+  # Set default docker run args
+  DOCKER_RUN_ARGS+=(
+    -e DOCKER_IMAGE
+    -e DOCKER_TAG
+    -e DOCKER_PLATFORMS
+    -e {{ .Env.CLI_NAME | strings.ToUpper }}_VERSION="${DOCKER_TAG:?}"
+    -e CI)
+
+  # Run init
   # shellcheck disable=SC1091
   source ".baseops/init.sh"
-  init_baseops "$@"
-
-  # Handle special variables
-  [[ -n "${BASEOPS_PORT:-}" ]] && DOCKER_RUN_ARGS+=("-p" "${BASEOPS_PORT:?}:${BASEOPS_PORT:?}" "-e" "BASEOPS_PORT")
-  [[ "${CI:-}" != 'true' ]] && DOCKER_RUN_ARGS+=("-it")
+  baseops_init "$@"
 
   # Handle post-exec cleanup
   [[ -f ./baseops-post-exec ]] && rm ./baseops-post-exec
 
+  # Run the container
   docker run --rm \
-    -v "/${PWD:?}:/work" \
-    -v "/${HOME:?}/.ssh/:/root/.ssh/" \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -e DOCKER_IMAGE \
-    -e DOCKER_TAG \
-    -e DOCKER_PLATFORMS \
-    -e {{ .Env.CLI_NAME | strings.ToUpper }}_VERSION="${DOCKER_TAG:?}" \
     "${DOCKER_RUN_ARGS[@]}" \
-    "${DOCKER_IMAGE:?}:${DOCKER_TAG:?}" \
+    "${DOCKER_REGISTRY:?}/${DOCKER_IMAGE:?}:${DOCKER_TAG:?}" \
     "${@}"
 
   # Handle post-exec
@@ -52,4 +65,4 @@ wrapper() {
   fi
 }
 
-wrapper "$@"
+baseops_wrapper "$@"

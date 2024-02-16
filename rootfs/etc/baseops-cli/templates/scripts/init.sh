@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 
-banner() {
-  export BANNER='{{ .Env.CLI_BANNER }}'
+logo() {
+  export BANNER='oppenheimer'
+  [[ "${NO_LOGO:-false}" == 'true' || "${QUIET:-false}" == 'true' ]] && return
   echo
-  echo "Welcome to ${BANNER:?}!"
+  gum style --foreground 10 "# I am ${BANNER:?}!"
+  gum style --foreground 10 "# Based on baseops-cli ${BASEOPS_CLI_VERSION:?}"
 }
 
 init() {
   # Put your initialization code here
-  banner "$@"
+  logo "$@"
 }
 
 init "$@"
