@@ -83,6 +83,7 @@ init() {
   export CLI_IMAGE_TAG="${image_tag:?}"
   export CLI_IMAGE_REGISTRY="${image_registry:?}"
   export CLI_IMAGE_PLATFORMS="${image_platforms_str:?}"
+  export CLI_VERSION_VAR="\${${CLI_NAME:?}_VERSION:?}"
   export OUTPUT_DIR="${OUTPUT_DIR:-/work}"
 
   echo
