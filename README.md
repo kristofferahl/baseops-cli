@@ -8,5 +8,5 @@ Part of the baseops project.
 ## Usage
 
 ```bash
-docker run --rm -it -v "/${PWD:?}:/work" kristofferahl/baseops-cli:latest init
+docker run --pull always --rm -it -v "/${PWD:?}:/work" kristofferahl/baseops-cli:latest init
 ```
