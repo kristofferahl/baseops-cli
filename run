@@ -14,7 +14,7 @@ declare tag_latest=false
 [[ -n $(git status -s) ]] && release_version+="-dirty"
 [[ "${release_version:?}" == "${git_tag:?}" ]] && tag_latest=true
 
-export BASEOPS_VERSION='v1-alpha.2' # The base image version to use
+export BASEOPS_VERSION='v1-alpha.3' # The base image version to use
 export BASEOPS_CLI_PLATFORMS="linux/arm64,linux/amd64"
 export BASEOPS_CLI_IMAGE="kristofferahl/baseops-cli"
 export BASEOPS_CLI_VERSION="${release_version:?}"
