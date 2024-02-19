@@ -47,8 +47,7 @@ init() {
   done
 
   while [[ ${#image_architectures[@]} -le 0 ]]; do
-    echo "What architectures should the image support?"
-    mapfile -t image_architectures < <(printf 'amd64\narm64' | gum choose --no-limit)
+    mapfile -t image_architectures < <(printf 'amd64\narm64' | gum choose --header "? What architectures should the image support:" --no-limit)
   done
 
   for architecture in "${image_architectures[@]}"; do
