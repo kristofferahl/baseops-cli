@@ -13,7 +13,7 @@ COPY packages.txt /etc/apk/packages.cli.txt
 RUN apk --no-cache add --update $(grep -h -v '^#' /etc/apk/packages.cli.txt)
 
 # go-centry
-ARG GO_CENTRY_VERSION=1.4.0
+ARG GO_CENTRY_VERSION=1.5.0
 RUN curl -L https://github.com/kristofferahl/go-centry/releases/download/v${GO_CENTRY_VERSION}/go-centry_${GO_CENTRY_VERSION}_Linux_${TARGETARCH}.tar.gz | tar -xzv -C /usr/local/bin \
   && mv /usr/local/bin/go-centry_v${GO_CENTRY_VERSION} /usr/local/bin/go-centry
 
